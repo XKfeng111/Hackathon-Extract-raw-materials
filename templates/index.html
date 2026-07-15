@@ -3,86 +3,72 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Hackathon</title>
+  <meta name="description" content="Upload reference raw materials and generate PI-style prompt files locally.">
+  <title>Hackathon &mdash; PI prompt workspace</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <main class="page">
-    <header class="hero">
-      <p class="eyebrow">Hackathon</p>
-      <h1>Build PI-style prompts from your raw materials.</h1>
-      <p class="intro">Upload reference files, extract mode-specific PI prompts locally, then use those prompts for research, slide, and paper feedback workflows.</p>
-    </header>
+  <main>
+    <nav class="nav" aria-label="Main navigation">
+      <a class="brand" href="{{ url_for('home') }}" aria-label="Hackathon home"><span class="brand-mark">H</span><span>Hackathon</span></a>
+      <span class="status"><i></i> Python &middot; local mode</span>
+    </nav>
 
-    {% if error %}
-      <section class="notice error" role="alert">{{ error }}</section>
-    {% endif %}
+    <section class="hero">
+      <div class="eyebrow"><span>&#10022;</span> PI prompts, from your own raw data</div>
+      <h1>Build PI-style prompts.<br><em>Keep your workflow.</em></h1>
+      <p class="intro">Upload reference materials by category, generate local TXT prompts, then use those mode-specific prompts for research, slide, and paper feedback.</p>
+    </section>
 
-    <section class="panel reference-panel" id="prompt-library">
+    {% if error %}<div class="notice error" role="alert"><strong>We need one change:</strong> {{ error }}</div>{% endif %}
+
+    <section class="upload-section prompt-library-section" id="prompt-library" aria-labelledby="prompt-library-title">
       <div class="section-heading">
-        <p class="step-label">Step 1</p>
-        <h2>Build Your PI Style Library</h2>
-        <p>Upload your existing reference materials. The app extracts PI-style patterns and saves three local prompt TXT files.</p>
+        <div>
+          <h2 id="prompt-library-title">Build Your PI Style Library</h2>
+          <p>Upload your existing raw materials. Hackathon extracts PI-style patterns and saves three local prompt TXT files.</p>
+        </div>
       </div>
 
-      <form method="post" action="{{ url_for('generate_prompts') }}" enctype="multipart/form-data" class="upload-form reference-form">
-        <label>
-          <span>Project name</span>
-          <input type="text" name="project_name" value="{{ reference_form.project_name }}" placeholder="e.g. WVTR" required>
-        </label>
+      <form method="post" action="{{ url_for('generate_prompts') }}" enctype="multipart/form-data" class="prompt-library-form">
+        <label class="focus-label project-label">Project name<input type="text" name="project_name" value="{{ reference_form.project_name }}" maxlength="120" placeholder="e.g. WVTR" required></label>
 
-        <div class="reference-grid">
+        <div class="reference-choices" aria-label="Reference raw material categories">
           {% for mode, group in reference_upload_groups.items() %}
-            <label class="reference-card">
-              <strong>{{ group.label }}</strong>
-              <small>{{ group.description }}</small>
-              <input type="file" name="{{ group.field }}" accept=".pdf,.docx,.pptx,.txt,.md" multiple>
+            <label class="reference-choice">
+              <span class="choice-icon" aria-hidden="true">{{ group.label[0] }}</span>
+              <span class="choice-copy"><strong>{{ group.label }}</strong><small>{{ group.description }}</small></span>
               <span class="mode-chip">{{ mode }}</span>
+              <input type="file" name="{{ group.field }}" accept=".pdf,.docx,.pptx,.txt,.md" multiple>
             </label>
           {% endfor %}
         </div>
 
-        <button type="submit">Generate PI-Style Prompts</button>
-        <small>Supported: {{ supported_extensions }}. Generated prompts are saved locally as TXT files.</small>
+        <button type="submit" class="primary-action">Generate PI-Style Prompts <span>&rarr;</span></button>
+        <p class="privacy-note">Supported: {{ supported_extensions }}. Prompt files are saved locally as TXT files.</p>
       </form>
     </section>
 
     {% if prompt_artifacts %}
-      <section class="panel prompt-output-panel">
-        <div class="preview-heading">
-          <div>
-            <p class="step-label">Prompt output</p>
-            <h2>{{ prompt_message }}</h2>
-            <p>Saved locally under this run: <code>{{ prompt_run_id }}</code></p>
-          </div>
+      <section class="feedback-section prompt-output-section" aria-labelledby="prompt-output-title">
+        <div class="section-heading">
+          <div><h2 id="prompt-output-title">{{ prompt_message }}</h2><p>Saved locally under run <code>{{ prompt_run_id }}</code>.</p></div>
           <div class="downloads">
             <a href="{{ prompt_download_urls.all }}">Download all prompts TXT</a>
             {% for artifact in prompt_artifacts %}
-              <a href="{{ prompt_download_urls[artifact.mode] }}">Download {{ artifact.mode }}</a>
+              <a href="{{ prompt_download_urls[artifact.mode] }}">{{ artifact.filename }}</a>
             {% endfor %}
           </div>
         </div>
 
-        <div class="prompt-list">
+        <div class="prompt-grid">
           {% for artifact in prompt_artifacts %}
             <article class="prompt-card">
-              <div class="record-meta">
-                <span>{{ loop.index }}</span>
-                <code>{{ artifact.filename }}</code>
-              </div>
+              <div class="feedback-meta"><span>{{ artifact.mode }}</span><span>{{ artifact.filename }}</span></div>
               <dl>
-                <div>
-                  <dt>Mode</dt>
-                  <dd>{{ artifact.mode }}</dd>
-                </div>
-                <div>
-                  <dt>Category</dt>
-                  <dd>{{ artifact.label }}</dd>
-                </div>
-                <div>
-                  <dt>Chunks</dt>
-                  <dd>{{ artifact.record_count }}</dd>
-                </div>
+                <div><dt>Category</dt><dd>{{ artifact.label }}</dd></div>
+                <div><dt>Chunks</dt><dd>{{ artifact.record_count }}</dd></div>
+                <div><dt>Files</dt><dd>{{ artifact.source_files|join('; ') if artifact.source_files else 'Default prompt' }}</dd></div>
               </dl>
               <pre class="prompt-preview">{{ artifact.content }}</pre>
             </article>
@@ -91,67 +77,43 @@
       </section>
     {% endif %}
 
-    <section class="panel" id="upload">
+    <section class="upload-section" id="upload" aria-labelledby="upload-title">
       <div class="section-heading">
-        <p class="step-label">Step 2</p>
-        <h2>Choose what you want to review</h2>
-        <p>Use this existing workflow to upload a file, choose its source type, and generate draft JSONL records for checking.</p>
+        <div><h2 id="upload-title">Choose what you want to review</h2><p>Keep the same review workspace style. Upload one file, choose its source type, and generate draft JSONL records for checking.</p></div>
       </div>
-      <form method="post" action="{{ url_for('generate') }}" enctype="multipart/form-data" class="upload-form">
-        <label>
-          <span>Raw material file</span>
-          <input type="file" name="file" accept=".pdf,.docx,.pptx,.txt,.md" required>
-          <small>Supported: {{ supported_extensions }}</small>
-        </label>
 
-        <label>
-          <span>Project name</span>
-          <input type="text" name="project_name" value="{{ form.project_name }}" placeholder="e.g. WVTR" required>
-        </label>
-
-        <fieldset>
-          <legend>Choose source type</legend>
-          <div class="source-grid">
-            {% for source_type, mentor_mode in source_types.items() %}
-              <label class="source-card">
-                <input
-                  type="radio"
-                  name="source_type"
-                  value="{{ source_type }}"
-                  {% if form.source_type == source_type %}checked{% endif %}
-                >
-                <strong>{{ source_type }}</strong>
-                <small>Default mentor mode: {{ mentor_mode }}</small>
-              </label>
-            {% endfor %}
-          </div>
-        </fieldset>
-
-        <div class="two-columns">
-          <label>
-            <span>Source date <em>(optional)</em></span>
-            <input type="date" name="source_date" value="{{ form.source_date }}">
-          </label>
-          <label>
-            <span>Mentor mode <em>(advanced)</em></span>
-            <input type="text" name="mentor_mode" value="{{ form.mentor_mode }}" placeholder="Auto-filled from source type">
-          </label>
+      <form method="post" action="{{ url_for('generate') }}" enctype="multipart/form-data">
+        <div class="type-choices" aria-label="Source type choices">
+          {% for source_type, mentor_mode in source_types.items() %}
+            <label class="type-choice {% if 'Talk' in source_type %}powerpoint-choice{% elif 'Meeting' in source_type %}transcript-choice{% else %}document-choice{% endif %}">
+              <input type="radio" name="source_type" value="{{ source_type }}" {% if form.source_type == source_type %}checked{% endif %}>
+              <span class="choice-icon" aria-hidden="true">{{ source_type[0] }}</span>
+              <span class="choice-copy"><strong>{{ source_type }}</strong><small>Default mentor mode: {{ mentor_mode }}</small></span>
+              <span class="choice-check" aria-hidden="true">&#10003;</span>
+            </label>
+          {% endfor %}
         </div>
 
-        <button type="submit">Generate JSONL</button>
+        <article class="active-upload document-upload">
+          <div class="active-upload-copy">
+            <span class="file-badge">{{ supported_extensions }}</span>
+            <h3>Upload your raw material</h3>
+            <p>Use this legacy JSONL extractor for draft records. The PI-style prompt library above is the new reference-material workflow.</p>
+          </div>
+          <div class="legacy-form-grid">
+            <label class="file-picker"><span>Choose a raw material file</span><input type="file" name="file" accept=".pdf,.docx,.pptx,.txt,.md" required></label>
+            <label class="focus-label">Project name<input type="text" name="project_name" value="{{ form.project_name }}" maxlength="120" placeholder="e.g. WVTR" required></label>
+            <label class="focus-label">Source date <em>(optional)</em><input type="date" name="source_date" value="{{ form.source_date }}"></label>
+            <label class="focus-label">Mentor mode <em>(advanced)</em><input type="text" name="mentor_mode" value="{{ form.mentor_mode }}" placeholder="Auto-filled from source type"></label>
+            <button type="submit">Generate JSONL <span>&rarr;</span></button>
+          </div>
+        </article>
       </form>
     </section>
 
-    <section class="panel preview-panel">
-      <div class="preview-heading">
-        <div>
-          <h2>Preview</h2>
-          {% if records %}
-            <p>Generated {{ record_count }} draft records. Please check before using them for training.</p>
-          {% else %}
-            <p>Your generated records will appear here after upload.</p>
-          {% endif %}
-        </div>
+    <section class="feedback-section" aria-labelledby="preview-title">
+      <div class="section-heading">
+        <div><h2 id="preview-title">Preview</h2><p>{% if records %}Generated {{ record_count }} draft records. Please check before using them for training.{% else %}Your generated records will appear here after upload.{% endif %}</p></div>
         {% if download_urls %}
           <div class="downloads">
             <a href="{{ download_urls.jsonl }}">Download JSONL</a>
@@ -161,43 +123,32 @@
         {% endif %}
       </div>
 
-      {% if records %}
-        <div class="record-list">
-          {% for record in records %}
-            <article class="record-card">
-              <div class="record-meta">
-                <span>{{ loop.index }}</span>
-                <code>{{ record.id }}</code>
-              </div>
-              <dl>
-                <div>
-                  <dt>Source file</dt>
-                  <dd>{{ record.source_file }}</dd>
-                </div>
-                <div>
-                  <dt>Source type</dt>
-                  <dd>{{ record.source_type }}</dd>
-                </div>
-                <div>
-                  <dt>Human review</dt>
-                  <dd><code>verified_by_human: {{ record.metadata.verified_by_human | lower }}</code></dd>
-                </div>
-              </dl>
-              <h3>Main concern</h3>
-              <p>{{ record.training_output.main_concern }}</p>
-              <h3>Action items</h3>
-              <ul>
-                {% for item in record.training_output.action_items %}
-                  <li>{{ item }}</li>
-                {% endfor %}
-              </ul>
-            </article>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="empty-state">No preview yet.</div>
-      {% endif %}
+      <div class="feedback-panel preview-panel">
+        {% if records %}
+          <div class="record-list">
+            {% for record in records %}
+              <article class="record-card">
+                <div class="feedback-meta"><span>{{ record.id }}</span><span>{{ record.source_file }}</span></div>
+                <dl>
+                  <div><dt>Source type</dt><dd>{{ record.source_type }}</dd></div>
+                  <div><dt>Human review</dt><dd><code>verified_by_human: {{ record.metadata.verified_by_human | lower }}</code></dd></div>
+                </dl>
+                <h3>Main concern</h3>
+                <p>{{ record.training_output.main_concern }}</p>
+                <h3>Action items</h3>
+                <ul>
+                  {% for item in record.training_output.action_items %}<li>{{ item }}</li>{% endfor %}
+                </ul>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state"><div class="spark">&#10022;</div><p>Ready when you are.</p><span>Generate JSONL records or PI-style prompt TXT files above.</span></div>
+        {% endif %}
+      </div>
     </section>
+
+    <footer><span>Hackathon</span><p>Local PI-style prompt and JSONL workspace. Uploaded files are processed on this computer.</p></footer>
   </main>
 </body>
 </html>
