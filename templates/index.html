@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Raw Materials to JSONL</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <p class="eyebrow">Hackathon Extract Raw Materials</p>
+      <h1>Import raw materials. Generate draft JSONL.</h1>
+      <p class="intro">Upload a research material, choose its source type, preview draft training records in the browser, then download the JSONL for human checking.</p>
+    </header>
+
+    {% if error %}
+      <section class="notice error" role="alert">{{ error }}</section>
+    {% endif %}
+
+    <section class="panel">
+      <h2>Upload raw material</h2>
+      <form method="post" action="{{ url_for('generate') }}" enctype="multipart/form-data" class="upload-form">
+        <label>
+          <span>Raw material file</span>
+          <input type="file" name="file" accept=".pdf,.docx,.txt,.md" required>
+          <small>Supported: {{ supported_extensions }}</small>
+        </label>
+
+        <label>
+          <span>Project name</span>
+          <input type="text" name="project_name" value="{{ form.project_name }}" placeholder="e.g. WVTR" required>
+        </label>
+
+        <fieldset>
+          <legend>Choose source type</legend>
+          <div class="source-grid">
+            {% for source_type, mentor_mode in source_types.items() %}
+              <label class="source-card">
+                <input
+                  type="radio"
+                  name="source_type"
+                  value="{{ source_type }}"
+                  {% if form.source_type == source_type %}checked{% endif %}
+                >
+                <strong>{{ source_type }}</strong>
+                <small>Default mentor mode: {{ mentor_mode }}</small>
+              </label>
+            {% endfor %}
+          </div>
+        </fieldset>
+
+        <div class="two-columns">
+          <label>
+            <span>Source date <em>(optional)</em></span>
+            <input type="date" name="source_date" value="{{ form.source_date }}">
+          </label>
+          <label>
+            <span>Mentor mode <em>(advanced)</em></span>
+            <input type="text" name="mentor_mode" value="{{ form.mentor_mode }}" placeholder="Auto-filled from source type">
+          </label>
+        </div>
+
+        <button type="submit">Generate JSONL</button>
+      </form>
+    </section>
+
+    <section class="panel preview-panel">
+      <div class="preview-heading">
+        <div>
+          <h2>Preview</h2>
+          {% if records %}
+            <p>Generated {{ record_count }} draft records. Please check before using them for training.</p>
+          {% else %}
+            <p>Your generated records will appear here after upload.</p>
+          {% endif %}
+        </div>
+        {% if download_urls %}
+          <div class="downloads">
+            <a href="{{ download_urls.jsonl }}">Download JSONL</a>
+            <a href="{{ download_urls.json }}">Download pretty JSON</a>
+            <a href="{{ download_urls.md }}">Download preview MD</a>
+          </div>
+        {% endif %}
+      </div>
+
+      {% if records %}
+        <div class="record-list">
+          {% for record in records %}
+            <article class="record-card">
+              <div class="record-meta">
+                <span>{{ loop.index }}</span>
+                <code>{{ record.id }}</code>
+              </div>
+              <dl>
+                <div>
+                  <dt>Source file</dt>
+                  <dd>{{ record.source_file }}</dd>
+                </div>
+                <div>
+                  <dt>Source type</dt>
+                  <dd>{{ record.source_type }}</dd>
+                </div>
+                <div>
+                  <dt>Human review</dt>
+                  <dd><code>verified_by_human: {{ record.metadata.verified_by_human | lower }}</code></dd>
+                </div>
+              </dl>
+              <h3>Main concern</h3>
+              <p>{{ record.training_output.main_concern }}</p>
+              <h3>Action items</h3>
+              <ul>
+                {% for item in record.training_output.action_items %}
+                  <li>{{ item }}</li>
+                {% endfor %}
+              </ul>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">No preview yet.</div>
+      {% endif %}
+    </section>
+  </main>
+</body>
+</html>
