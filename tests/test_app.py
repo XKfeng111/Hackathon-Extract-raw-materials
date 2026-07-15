@@ -323,11 +323,22 @@ def test_mentor_creator_is_prompted_when_no_existing_mentor_is_selected():
     javascript = Path("static/library_uploads.js").read_text(encoding="utf-8")
 
     assert 'data-selected-mentor' in html
+    assert 'data-mentor-home-url' in html
     assert 'data-mentor-creator' in html
     assert "toggleMentorCreator" in javascript
     assert "creator.hidden = Boolean(select.value)" in javascript
     assert "setAttribute('required', 'required')" in javascript
     assert "removeAttribute('required')" in javascript
+
+
+def test_mentor_dropdown_syncs_existing_file_display():
+    javascript = Path("static/library_uploads.js").read_text(encoding="utf-8")
+
+    assert "handleMentorSelectionChange" in javascript
+    assert "clearStoredFileDisplays" in javascript
+    assert "window.location.assign" in javascript
+    assert "prompt_mentor=" in javascript
+    assert "stored-file-list" in javascript
 
 
 def test_mentor_files_are_ignored_by_git():

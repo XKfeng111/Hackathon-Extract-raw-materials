@@ -34,7 +34,7 @@
         <div class="mentor-library-manager" aria-label="PI style mentor library manager">
           <div class="mentor-selector">
             <label>Select existing mentor
-              <select name="selected_prompt_mentor" data-selected-mentor>
+              <select name="selected_prompt_mentor" data-selected-mentor data-mentor-home-url="{{ url_for('home') }}">
                 <option value="">No mentor selected</option>
                 {% for mentor in prompt_mentors %}
                   <option value="{{ mentor.slug }}" {% if mentor.slug == selected_prompt_mentor %}selected{% endif %}>{{ mentor.name }}</option>

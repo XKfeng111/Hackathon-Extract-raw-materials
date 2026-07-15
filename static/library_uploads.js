@@ -49,8 +49,30 @@
       }
     }
 
+    function clearStoredFileDisplays(form) {
+      if (!form) return;
+      form.querySelectorAll('.stored-file-list').forEach(function (list) {
+        list.textContent = '';
+        list.hidden = true;
+      });
+    }
+
+    function handleMentorSelectionChange(select) {
+      toggleMentorCreator(select);
+      var form = select.closest('form');
+      if (select.value) {
+        var homeUrl = select.getAttribute('data-mentor-home-url') || '/';
+        window.location.assign(homeUrl + '?prompt_mentor=' + encodeURIComponent(select.value) + '#prompt-library');
+        return;
+      }
+      clearStoredFileDisplays(form);
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', (select.getAttribute('data-mentor-home-url') || '/') + '#prompt-library');
+      }
+    }
+
     document.querySelectorAll('[data-selected-mentor]').forEach(function (select) {
-      select.addEventListener('change', function () { toggleMentorCreator(select); });
+      select.addEventListener('change', function () { handleMentorSelectionChange(select); });
       toggleMentorCreator(select);
     });
   });
